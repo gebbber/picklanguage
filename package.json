@@ -1,0 +1,15 @@
+{
+  "name": "picklanguage",
+  "version": "1.0.0",
+  "description": "Parse accept-language header and pick a preferred language",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type":"git",
+    "url":"https://github.com/gebbber/picklanguage.git"
+  },
+  "author": "Gregory Everett Brandon <greg.brandon@gmail.com>",
+  "license": "ISC"
+}
