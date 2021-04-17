@@ -7,7 +7,10 @@ module.exports = (arg1, arg2, arg3) => {
 
 //internal use only:
 function pickLanguage(arg1, arg2, arg3, collected) {
-    const options = anObjectFrom(arg1, arg2, arg3, { withProperty: 'strict' });
+    
+    const { req, res, next } = isMiddleware(arg1, arg2, arg3);
+    const options = ( !req && !res && !next) ? anObjectFrom(arg1, arg2, arg3, { withProperty: 'strict' }) : null;
+
     const langPref = aStringFrom(arg1, arg2, arg3);
     const available = anArrayFrom(arg1, arg2, arg3);
 
@@ -34,12 +37,10 @@ function pickLanguage(arg1, arg2, arg3, collected) {
     }
 
     //if we have an Express middleware signature, then act as middleware
-    const { req, res, next } = isMiddleware(arg1, arg2, arg3);
     if (req && res && next) {
 
         if (!collection.options || (collection.options.strict !== false && collection.options.strict !== true))
             throw new Error('Must set options: {strict: true} or {strict: false}');
-        const strict = collection.options.strict;
 
         if (!collection.available || collection.available.length === 0)
             throw new Error('No available languages specified');
@@ -52,10 +53,11 @@ function pickLanguage(arg1, arg2, arg3, collected) {
             || req.lang
             || (req.headers && req.headers["accept-language"])
         )
-
+        
         const langTag = pick(collection.available, reqLangPref);
-
+        
         res.langTag = langTag;
+
         res.translate = translator(langTag, collection.available, collection.options);
 
         next();

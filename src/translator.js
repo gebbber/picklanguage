@@ -15,7 +15,7 @@ function translator(langTag, available, options) {
     return translate;
 
     function translate(Message) {
-        
+
         if (!Message || typeof Message !== 'object' || Message === null) throw new Error('Message was not passed as an object');
 
         //look for missing translations if have options: {strict: true}
@@ -24,8 +24,8 @@ function translator(langTag, available, options) {
             if (fallback && !Message[lprop(fallback)]) throw new Error(`Message object is missing translation for fallback language ${fallback}`);
             
             for (la of available) {
-                const prop = lprop(la.tag);
-                if (!Message[prop]) throw new Error(`Message object is missing translation for '${la.tag}'`)
+                const prop = lprop(la);
+                if (!Message[prop]) throw new Error(`Message object is missing translation for '${la}'`)
             }
 
         }

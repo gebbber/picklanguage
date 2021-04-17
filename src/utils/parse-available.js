@@ -13,7 +13,7 @@ function parseAvailable(languages) {
             if (!lang) throw new Error('Languages array contained an empty element');
             if (typeof lang !== 'string') throw new Error('Languages array contained a non-string');
         }
-        langs = languages;
+        langs = [...languages];
     } else if (typeof languages === 'string') langs = [languages];
     else throw new Error('Expecting a string or array');
 
