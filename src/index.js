@@ -21,9 +21,6 @@ function pickLanguage(arg1, arg2, arg3, collected) {
     // if we've collected a language preference string, then return the chosen language and a translator
     if (langPref) {
 
-        if (!collection.options || (collection.options.strict !== false && collection.options.strict !== true))
-            throw new Error('Must set options: {strict: true} or {strict: false}')
-
         if (!collection.available || collection.available.length === 0)
             throw new Error('No available languages specified');
 
@@ -38,9 +35,6 @@ function pickLanguage(arg1, arg2, arg3, collected) {
 
     //if we have an Express middleware signature, then act as middleware
     if (req && res && next) {
-
-        if (!collection.options || (collection.options.strict !== false && collection.options.strict !== true))
-            throw new Error('Must set options: {strict: true} or {strict: false}');
 
         if (!collection.available || collection.available.length === 0)
             throw new Error('No available languages specified');

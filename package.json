@@ -13,8 +13,5 @@
   },
   "author": "Gregory Everett Brandon <greg.brandon@gmail.com>",
   "license": "ISC",
-  "devDependencies": {
-    "jest": "^26.6.3"
-  },
   "dependencies": {}
 }

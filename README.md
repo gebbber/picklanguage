@@ -1,80 +1,162 @@
 # pickLanguage - Parse and Pick Language Header
 
-## Quick Start: as Express Middleware:
+## Quick Start:
+```javascript
+const pickLanguage = require('picklanguage');
+
+const {langTag} = pickLanguage(['en', 'fr-CA'], 'zh,de;q=0.8,fr;');
+
+console.log(langTag);
+
+/*
+
+'fr-CA'
+
+*/
+```
+
+## Quick Start&mdash;as Express Middleware:
 ```javascript
 const express = require('express');
-const picklanguage = require('picklanguage')({strict: true});
+const pickLanguage = require('picklanguage');
 
 const app = express();
 
-app.use(picklanguage(['en', 'fr-CA'])); // implemented languages
+    app.use(pickLanguage(['en', 'fr-CA'])); // implemented languages
 
-app.get(`/`, (req, res)=>{
+    const HelloMessage = {en: `Hello, my friend!`, frCA: `Bonjour, mon ami!`};
 
-    const HelloFriend = {en: `Hello, my friend!`, frCA: `Bonjour, mon ami!`};
-
-    res.send(res.translate(HelloFriend));
-
-});
+    app.get(`/`, (req, res)=>{
+        res.send(res.translate(HelloMessage)); // 'Hello, ...' or 'Bonjour, ...'
+    });
 
 app.listen(3000);
 ```
 
-Import `picklanguage` and then `app.use` it before any routes that need it, and it will add the `translate(MessageObject)` to the `response` object for convenient use in other middleware functions.
+Import the package and then `app.use` it before any routes that need to use it, telling it which languages have been implemented.  It will add the `res.translate` function for convenient use in other middleware functions.
 
-As a fallback, it chooses a language based on the `accept-language` header sent by the user agent, but users on unfamiliar computers don't always have control over the browser language setting, and so it's preferable to allow them to select the display language.
+If available, `pickLanguage` picks up the user's language preference from any of several places before falling back to parsing the `accept-language` header.
 
-`picklanguage` looks for a preferred display language in any of the following places, before falling back to the language header: `req.session.user.language`, `req.session.user.lang`, `req.session.language`, `req.session.lang`, `req.user.language`, `req.user.lang`, `req.language`, `req.lang`
+## API
 
-This means if you store the user's preferred language (as an individual BCP 47 language, or a series of tags formatted like a language header), then `picklanguage` will pick it up as long as you `app.use` it *after* your session middleware.
+### `pickLanguage(availableLanguages, options, userLanguagePref)`
 
-An `options` object with either `strict: true` or `strict: false` must be passed to `picklanguage` before it can be used&mdash;shown above in-line with the `require` function.  'Strict' mode actively looks for message objects with missing translations, and throws an error (only once an attempt is made to translate them).
+* `options` is an options object; see below for available options
+* `availableLanguages` is an array of language tags that you have implemented in your app (e.g., 'en', 'en-US', etc.)
+* `userLanguagePref` is the user's preferred language and can be a single tag, or formatted as an `accept-language` request header
+* These three arguments can be passed in any order.
 
-## More Generic Use
+### Picking a Language Directly
 
-`picklanguage` returns a function, and each time up to three arguments can be passed, in any order:
-
-### `picklanguage(availableLanguages, options, userLanguagePref)`
-
-* `options` is an options object; `strict:true` or `strict:false` is mandatory; other options are shown below
-* `availableLanguages` is an array of implemented language tags; tags must be BCP-47 compliant
-* `userLanguagePref` is the user's preferred language (BCP-47-compliant language tag), or multiple languages formatted as an `accept-language` request header string
-
-You must pass both `availableLanguages` and an `options` object having either `strict: true` or `strict: false`, either before or with the string providing the user's language preference.  This can be done in subsequent calls to picktranslate, or in one line:
+If passed a string, `pickLanguage` will assume it's a language tag or list of languages (formatted like an `accept-language` header), and will pick the best of the available languages, returning both the chosen tag and a function that can be used to translate message objects:
 
 ```javascript
-const { translate } = require('picklanguage') ({strict: true}) (['en','fr-CA']) ('en');
+const pickLanguage = require('picklanguage');
 
-console.log(translate(HelloFriend));
+const {langTag, translate} = pickLanguage(['en', 'es'], 'en-US');
+
+console.log(langTag);             // 'en'
+
+console.log(translate(Message));  // English translation 
+```
+
+`pickLanguage` always returns one of the tags specified as implemented languages.  Specifying your implemented languages is mandatory.
+
+### The `translate(Message)` Function
+
+The `translate` function accepts an object, and returns the property on that object matching the user's preferred language.  The property name is selected as the chosen language tag, with any hyphens removed.  `'en-US'` will map to `enUS:`, `'fr'` will map to `fr:`, `'ES'` will map to `ES:`, etc.  Note that although language tags are case insensitive, the object properties used *are* case sensitive, and `pickLanguage` will use typecase as you provided in your implemented-languages array.  To illustrate:
+
+```javascript
+const pickLanguage = require('picklanguage')({strict: false});
+
+const { translate } = pickLanguage(['en', 'fr-CA'], `EN-US`);
+
+const GoodMessage = {en: "Hello", frCA: "Bonjour"};
+const BrokenMessage = {EN: "Hello", frCA: "Bonjour"};
+
+console.log(
+    translate(GoodMessage),   // 'Hello'
+    translate(BrokenMessage)  // '(no translation)'
+);
+```
+Two things you can see here:
+1. The object property chosen for translation matches the tag you passed as an implemented language.
+2. The type case in the user's preferred language ('EN-US') is ignored, providing correct case-insensitive behavior for language tag interpretation.
+
+By default, `translate` will throw an error if it ever attempts to translate a message object that is missing an implemented language, even if not attempting to translate to that language. To disable this, pass `{strict: false}` to `pickLanguage`.  (The `BrokenMessage` object in the example above would have thrown an error if `pickLanguage` had not been initialized with `{strict: false}`.)
+
+Setting `{strict: false}` (or setting options in general) can be done in several places:
+
+ ```javascript
+const pickLanguage = require('picklanguage')({strict: false});
+
+const { translate } = pickLanguage(['en', 'fr-CA']);
 ```
 or:
 ```javascript
-const { translate } = require('picklanguage')({strict: true}, ['en','fr-CA'], 'en');
+const pickLanguage = require('picklanguage');
 
-console.log(translate(HelloFriend));
+const { translate } = pickLanguage(['en', 'fr-CA'], {strict: false}));
 ```
-or:
+or: (notice the use of `let` in this next one)
 ```javascript
-let picklanguage = require('picklanguage');
+let pickLanguage = require('picklanguage');
 
-picklanguage = picklanguage({strict: true}); // mandatory option
-picklanguage = picklanguage(['en', 'en-US', 'en-CA']); // implemented all three!
-picklanguage = picklanguage({silent: true}); // add more options
+pickLanguage = pickLanguage({strict: false, fallback: 'fr-CA'});
 
-//translator function for generic english, and chosen language tag:
-const { translate, langTag } = picklanguage('en'); 
-
-console.log('Display language:', langTag);
-console.log(translate(HelloFriend));
+const { translate } = pickLanguage(['en', 'fr-CA']));
 ```
+
+### Passing as Express Middleware
+
+If passed to Express using `app.use`, `pickLanguage` will recognize that it's being used as middleware, and add `res.translate` and `res.langTag` to the response object.  It looks in several places for the user's preferred language, and then parses the 'accept-language' request header if no preference is found.
+
+```javascript
+const express = require('express');
+const pickLanguage = require('picklanguage');
+
+const app = express();
+
+    app.use(pickLanguage(['en', 'fr-CA'])); // implemented languages
+
+    app.get(`/`, (req, res)=>{
+
+        const HelloFriend = {
+            en: `Hello, my friend!`,
+            frCA: `Bonjour, mon ami!`
+        };
+
+        res.send(res.translate(HelloFriend)); 
+        // 'Hello, ...' or 'Bonjour, ...'
+
+        console.log(res.langTag)
+        // 'en' or 'fr-CA'
+
+    });
+
+app.listen(3000);
+```
+
+If you store the user's preferred language on the session or in their profile, then use `pickLanguage` after your session middleware, and `pickLanguage` can pick it up from any of the following, in this order: `req.session.user.language`, `req.session.user.lang`, `req.session.language`, `req.session.lang`, `req.user.language`, `req.user.lang`, `req.language`, `req.lang`.  Otherwise, you can add the user's language preference manually in any of these locations:
+
+```javascript
+app.use((req, res, next)=>{
+    req.lang = 'en'; // add user's preferred language
+    next();
+});
+
+app.use(pickLanguage(['en', 'fr-CA']));
+```
+(If you don't do this, `pickLanguage` will still fall back to picking it up from the accept-language header, providing for a very simple basic use case.)
+
 
 ## Options
 
-### `strict` *(mandatory `true` or `false`)*
+### `strict` (defaults to `true`)
 
-Setting `strict: true` will cause `picklanguage` to throw an error if any object is ever translated which doesn't have all supported langauges.  Useful for *development* environments to ensure translations have not been missed.  Set it to `false` for more graceful behavior in production.  (Falsey values won't work&mdash; the value must be "strictly" `true` or `false`.)
+Setting `strict: true` will cause `pickLanguage` to throw an error you attempt to translate an object that is missing one of the languages you said you would support. Useful for development environments to ensure you have not missed any translations.  Set it to `false` for more graceful behavior in production. Falsey values won't work&mdash; the value must be "strictly" `false`.
 
-A sensible value for the `strict:` setting might be:
+A sensible value for the `strict:` setting in a node project might be:
 ```javascript
     const options = {
         strict: process.env.NODE_ENV === 'development'
@@ -88,7 +170,7 @@ Specifies a string to act as a stand-in for missing messages, when using `strict
 ```javascript
 const options = {
     strict: false,
-    message: 'MISSING: ${tagName}' //not a template literal!
+    message: 'MISSING: ${tagName}' //this is not a template literal
 }
 ```
 ### `fallback`
@@ -104,7 +186,7 @@ const options = {
 
 ### `flagMissing`
 
-Places `[¿«funny characters»?]` when any fallback is used:
+Places `[¿«funny characters»?]` when a fallback is used:
 
 ```javascript
 const options = {
@@ -125,46 +207,6 @@ const options = {
 }
 ```
 
-## Front-End Use - React
+## Front-End Use in React
 
-### For a much simpler and more elegant solution in React, see <a href="https://www.npmjs.com/package/usetranslate">NPM: usetranslate</a>
-
-Use `useContext` or `props` to pass user language to the components that need it, and then:
-
-```jsx
-import React from 'react';
-
-const picklanguage = require('picklanguage')({strict: true});
-
-export default function App() {
-    
-    [languagePref, setLanguagePref] = React.useState('en-CA');
-
-    // Get user's language preference from UI dropdown or fetch language header
-    // from server, then setLanguagePref(languageHeader)
-
-    const languages = ['en-CA','fr-CA'];
-    const { translate } = pickLanguage(languagePref, languages);   
-
-    return <SpecialWarning translate={translate} />;
-
-}
-
-const Ok      = {enCA: "OK", frCA: "OK"};
-const Cancel  = {enCA: "Cancel", frCA: "Annuler"};
-const Message = {enCA: "Don't do that!", frCA: "Ne fait pas ca!"};
-
-function SpecialWarning(props) {
-
-    const translate = props.translate;
-
-    return (
-        <PopUpWindow>
-            <p>{translate(Message)}</p>
-            <Button>{translate(Ok)}</Button>
-            <Button>{translate(Cancel)}</Button>
-        </PopUpWindow>
-    );
-}
-```
-
+### See <a href="https://www.npmjs.com/package/usetranslate">NPM: usetranslate</a> for a React hook that uses this package for simple and elegant translation of messages in components.

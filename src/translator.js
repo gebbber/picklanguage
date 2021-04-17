@@ -5,7 +5,7 @@ module.exports = translator;
 
 function translator(langTag, available, options) {
     
-    const strict = options && options.strict;
+    const strict = options && options.strict === false ? false: true;
     const fallback = options && options.fallback && typeof options.fallback === 'string' && options.fallback;
     const anyFallback = options && options.anyFallback;
     const flagMissing = options && options.flagMissing;

@@ -5,25 +5,13 @@ const pl = pickLanguage;
 test('immediately passing a preference string throws an error', ()=>{
     expect(()=>{
         pl("en-GB")
-    }).toThrow('Must set options: {strict: true} or {strict: false}');
-})
-
-test('passing only a preferences object and then a preference string throws an error', ()=>{
-    expect(()=>{
-        pl({strict:true})('fr');
     }).toThrow('No available languages specified');
 })
 
-test('passing an options aray and then a preference string throws an error', ()=>{
-    expect(()=>{
-        pl(['en','fr-CA'])('fr');
-    }).toThrow('Must set options: {strict: true} or {strict: false}');
-})
-
-test('passing an options aray and then {strict:null} and then a preference string throws an error', ()=>{
-    expect(()=>{
-        pl(['en','fr-CA'])({strict:null})('fr')
-    }).toThrow('Must set options: {strict: true} or {strict: false}');
+test('passing an array and then a preference string returns {translate: ()}', ()=>{
+    expect(typeof
+        pl(['en','fr-CA'])('fr').translate
+    ).toBe('function');
 })
 
 test('passing {strict: true} and then an array and then a preference string returns {translate: ()}', ()=>{

@@ -4,44 +4,43 @@ const pl = pickLanguage;
 
 // dummy functions cause picktranslate to return middleware
 const request = (header) => {return {app: true, method: true, protocol: true, headers: {"accept-language":header}};};
-const req = request("en-US");
+const req = request();
 const res = {app: true, send: true, end: true, set: true};
 const next = ()=>{};
 
+// Test errors
 test('immediately using as middleware throws an error', ()=>{
     expect(()=>{
         pl(req, res, next)
-    }).toThrow('Must set options: {strict: true} or {strict: false}');
+    }).toThrow('No available languages specified');
 })
 
+// Test return types
 test('initializing middleware with only a preferences object throws an error', ()=>{
     expect(()=>{
         pl({strict:true})(req, res, next);
     }).toThrow('No available languages specified');
 })
 
-test('initiazlizing middleware with only an available-languages array throws an error', ()=>{
-    expect(()=>{
-        pl(['en','fr-CA'])(req, res, next);
-    }).toThrow('Must set options: {strict: true} or {strict: false}');
-})
-
-test('initializing middleware with available languages and not setting {strict:true} or {strict:false} throws an error', ()=>{
-    expect(()=>{
-        pl(['en','fr-CA'])({strict:null})(req, res, next)
-    }).toThrow('Must set options: {strict: true} or {strict: false}');
-})
-
 test('passing strict:true and available languages and then using as middleware adds response.translate', ()=>{
     const response = {...res};
+    const req = request("en-US");
     pl(['en','fr-CA'])({strict:true})(req, response, next);
     expect(typeof response.translate).toBe('function');
 })
 
 test('passing strict:false and available languages and then using as middleware adds response.translate', ()=>{
     const response = {...res};
+    const req = request("en-US");
     pl(['en','fr-CA'])({strict:false})(req, response, next);
     expect(typeof response.translate).toBe('function');
+})
+
+test('passing strict:true and available languages and then using as middleware adds response.langTag', ()=>{
+    const response = {...res};
+    const req = request('en');
+    pl(['en','fr-CA'])({strict:true})(req, response, next);
+    expect(response.langTag).toBe('en');
 })
 
 test('passing strict:false and available languages and then using as middleware adds response.langTag', ()=>{
@@ -51,6 +50,17 @@ test('passing strict:false and available languages and then using as middleware 
     expect(response.langTag).toBe('fr-CA');
 })
 
+
+// Strict Behavior
+
+test('res.translate with no {strict} setting defaults to strict', ()=>{
+    const response = {...res};
+    const req = request('en');
+    expect(()=>{
+        pl(['en','fr-CA'])(req, response, next);
+        response.translate({en: 'english', fr: 'generic french; frCA is missing'})
+    }).toThrow(`Message object is missing translation for 'fr-CA'`);
+})
 
 test('res.translate with {strict: true} throws an error for any missing language', ()=>{
     const response = {...res};
