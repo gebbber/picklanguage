@@ -4,7 +4,7 @@ const interpretTag = require('./interpret-tag');
 // parseHeader forces interpretation of tags without throwing errors because of user input
 function parseHeader(langHeader) {
 
-    if (typeof langHeader !== 'string') throw new Error('Expecting a string');
+    if (!langHeader || typeof langHeader !== 'string') return [];
 
     const lh = stripTo(langHeader.toLowerCase(), alphabet + numerals + '*-=,.;');
     

@@ -115,14 +115,6 @@ test('pick picks a language if there is no specified preference',()=>{
 });
 
 
-test('pick throws an error if the preference is not a string',()=>{
-    const avail = [`cd`, `cd-EF`];
-    const pref = false;
-    expect(()=>pick(avail, pref)).toThrow(`Expecting a string`);
-});
-
-
-
 
 
 //script variations

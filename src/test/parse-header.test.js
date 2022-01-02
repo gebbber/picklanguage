@@ -1,7 +1,7 @@
 const ph = require('../utils/parse-header');
 
-test('parseHeader throws an error if given a non-string',()=>{
-    expect(()=>{ph()}).toThrow('Expecting a string');
+test('parseHeader returns an array if given a non-string',()=>{
+    expect(Array.isArray(ph(false))).toBe(true);
 });
 
 test('parseHeader ignores whitespace gracefully',()=>{
